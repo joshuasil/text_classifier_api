@@ -1,7 +1,8 @@
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import pickle
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
