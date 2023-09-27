@@ -1,7 +1,9 @@
 pip == 23.2.1
+scikit-learn
 uvicorn
 fastapi
 pydantic
-tensorflow-cpu
 numpy
 gunicorn
+joblib
+nltk

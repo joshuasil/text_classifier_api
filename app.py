@@ -1,42 +1,55 @@
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
 import pickle
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import requests
 import json
+import joblib
+import re
+from nltk.tokenize import word_tokenize
 
+import warnings
+warnings.filterwarnings('ignore')
 
 
 class Details(BaseModel):
     text_to_classify: str
 
-loaded_tokenizer = pickle.load(open('tokenizer.pkl','rb'))
+# Save the trained model to a file
+model_filename = 'svc_model.pkl'
 
-new_model = tf.keras.models.load_model('c4h_text_model')
+# Save the TF-IDF vectorizer to a file
+tfidf_vectorizer_filename = 'tfidf_vectorizer.pkl'
 
-MAX_SEQUENCE_LENGTH = 125
-reverse_mapping_dict = pickle.load(open('reverse_mapping.pkl', 'rb'))
+def preprocess_text(text):
+    if isinstance(text, str):
+        text = text.lower()
+        text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+        tokens = word_tokenize(text)  # Tokenize text
+        return ' '.join(tokens)
+    else:
+        return ''
+    
+
+loaded_model = joblib.load(model_filename)
+loaded_tfidf_vectorizer = joblib.load(tfidf_vectorizer_filename)
+class_labels = loaded_model.classes_
+
 
 
 app = FastAPI()
 
 @app.post('/c4hprediction')
 def c4hprediction(data: Details):
-    new_complaint = [data.text_to_classify]
-    
-    seq = loaded_tokenizer.texts_to_sequences(new_complaint)
-    padded = pad_sequences(seq, maxlen=MAX_SEQUENCE_LENGTH)
-    pred = new_model.predict(padded)[0]
-    top_topic_indices = np.argsort(pred)[::-1][:4]
-    # print(pred, labels[np.argmax(pred)])
-    # Print the top 4 predicted topics and their probabilities
-    prediction = [reverse_mapping_dict[idx] for idx in top_topic_indices]
-
-    return {'message': data,'prediction': prediction}
+    new_text = [data.text_to_classify]
+    print(new_text)
+    # new_text = [preprocess_text(new_text)]
+    print(new_text)
+    class_probabilities = loaded_model.predict_proba(new_text)
+    top_class_indices = class_probabilities.argsort()[0][::-1][:4]
+    top_class_labels = [class_labels[i] for i in top_class_indices]
+    return {'message': data,'prediction': top_class_labels}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=1000, reload=True)
