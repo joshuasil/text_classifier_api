@@ -1,9 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
-import pickle
 import numpy as np
-import requests
 import json
 import joblib
 import re
