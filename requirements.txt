@@ -1,0 +1,7 @@
+pip == 23.2.1
+uvicorn
+fastapi
+pydantic
+tensorflow
+pickle
+numpy
